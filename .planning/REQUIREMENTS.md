@@ -21,13 +21,13 @@
 ### Keymapping & Profiles
 
 - [x] **MAP-01**: Gerenciador de perfis JSON em `~/.config/wayfire/profiles/` com importação, exportação e perfil padrão competitivo (`default_freefire.json`).
-- [ ] **MAP-02**: Componentes de mapeamento customizáveis: TapButton (Single/Hold/Turbo), DPad analógico WASD, AimController (mira/câmera) e FireButton (gatilho).
+- [x] **MAP-02**: Componentes de mapeamento customizáveis: TapButton (Single/Hold/Turbo), DPad analógico WASD, AimController (mira/câmera) e FireButton (gatilho).
 - [ ] **MAP-03**: Algoritmo de proteção contra o bug do analógico com reset suave ao suspender mouse.
 
 ### Graphical Overlay & UI
 
-- [ ] **UI-01**: Overlay transparente Wayland (GTK4 / Layer Shell) para visualização OSD com controle de opacidade (0% a 100%).
-- [ ] **UI-02**: Modo de edição interativo estilo GG Mouse Pro (duplo clique cria bolinha em escuta, captura instantânea da próxima tecla física, arrastar/soltar, exclusão e redimensionamento).
+- [x] **UI-01**: Overlay transparente Wayland (GTK4 / Layer Shell) para visualização OSD com controle de opacidade (0% a 100%).
+- [x] **UI-02**: Modo de edição interativo estilo GG Mouse Pro (duplo clique cria bolinha em escuta, captura instantânea da próxima tecla física, arrastar/soltar, exclusão e redimensionamento).
 - [ ] **UI-03**: Launcher principal estilo central de jogos com sliders de sensibilidade X/Y, seletor de resolução em 1 clique, seletor de perfis e botão "Jogar Free Fire".
 
 ### Packaging & Distribution
@@ -68,9 +68,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WAY-02 | Phase 2 | Complete |
 | WAY-03 | Phase 2 | Complete |
 | MAP-01 | Phase 2 | Complete |
-| MAP-02 | Phase 3 | Pending |
-| UI-01 | Phase 3 | Pending |
-| UI-02 | Phase 3 | Pending |
+| MAP-02 | Phase 3 | Complete |
+| UI-01 | Phase 3 | Complete |
+| UI-02 | Phase 3 | Complete |
 | MAP-03 | Phase 4 | Pending |
 | UI-03 | Phase 4 | Pending |
 | PKG-01 | Phase 5 | Pending |
