@@ -1,0 +1,139 @@
+{
+  "phase": "2",
+  "phase_name": "Comunicação com Waydroid e Gerenciamento de Perfis",
+  "timestamp": "2026-10-31T09:37:15-03:00",
+  "areas_completed": [
+    "Ciclo de Vida e Lançamento do Waydroid",
+    "Resolução Esticada e Comportamento de Reinício",
+    "Injeção de Spoofing ASUS ROG Phone"
+  ],
+  "areas_remaining": [
+    "Schema e Validação de Perfis JSON"
+  ],
+  "decisions": {
+    "Ciclo de Vida e Lançamento do Waydroid": [
+      {
+        "question": "Como o WaydroidController deve agir quando detectar que o serviço de sistema do Waydroid não está ativo?",
+        "answer": "Checagem inteligente com tentativa de inicialização: Verifica systemctl is-active waydroid-container. Se inativo, tenta iniciar e emite aviso amigável caso falhe.",
+        "options_presented": [
+          "Checagem inteligente com tentativa de inicialização",
+          "Checagem estrita sem tentar iniciar",
+          "Você decide"
+        ]
+      },
+      {
+        "question": "Como o WaydroidController deve gerenciar a inicialização da sessão e aguardar a prontidão do Android?",
+        "answer": "Processo em background com polling de prontidão: Dispara waydroid session start em background assíncrono e monitora waydroid status até contêiner e sessão reportarem RUNNING.",
+        "options_presented": [
+          "Processo em background com polling de prontidão",
+          "Aguardar tempo fixo (sleep)",
+          "Você decide"
+        ]
+      },
+      {
+        "question": "O Free Fire possui duas edições populares no Android: Standard e MAX. Como o WaydroidController deve resolver qual pacote lançar?",
+        "answer": "Auto-detecção inteligente com override no perfil: Inspeciona pacotes instalados no Waydroid, prioriza o configurado no perfil ou Standard se ambos existirem.",
+        "options_presented": [
+          "Auto-detecção inteligente com override no perfil",
+          "Fallback sequencial simples",
+          "Exigir definição estrita no perfil",
+          "Você decide"
+        ]
+      },
+      {
+        "question": "Quando o usuário encerra o WayFire (ou solicita a parada via CLI/Launcher), como o ciclo de vida do Waydroid e do jogo deve ser finalizado?",
+        "answer": "Parada do app com preservação opcional da sessão: Fecha o processo do jogo com am force-stop preservando a sessão para retomada rápida, mas oferece opção/flag para parada completa.",
+        "options_presented": [
+          "Parada do app com preservação opcional da sessão",
+          "Encerramento total imediato",
+          "Desconectar apenas o input",
+          "Você decide"
+        ]
+      }
+    ],
+    "Resolução Esticada e Comportamento de Reinício": [
+      {
+        "question": "Como a resolução da tela deve ser configurada e armazenada no WayFire?",
+        "answer": "Integrada ao Perfil JSON com Presets Competitivos: Cada perfil armazena width e height com presets como 1920x1080, 1440x1080 e 1024x768.",
+        "options_presented": [
+          "Integrada ao Perfil JSON com Presets Competitivos",
+          "Configuração Global do Sistema",
+          "Você decide"
+        ]
+      },
+      {
+        "question": "O Waydroid altera resolução via persist.waydroid.width e height. Como o WaydroidController deve aplicar essas propriedades?",
+        "answer": "Verificação idempotente prévia: Consulta propriedades atuais antes de alterar; se for igual, evita escritas e reinícios.",
+        "options_presented": [
+          "Verificação idempotente prévia",
+          "Aplicação forçada a cada execução",
+          "Você decide"
+        ]
+      },
+      {
+        "question": "Quando a resolução é alterada e uma sessão já está ativa, como agir?",
+        "answer": "Reinício transparente automático: Encerra a sessão graciosamente e reabre automaticamente com as novas dimensões e feedback claro.",
+        "options_presented": [
+          "Reinício transparente automático",
+          "Perguntar/Avisar o usuário",
+          "Aplicar apenas antes de iniciar a sessão",
+          "Você decide"
+        ]
+      },
+      {
+        "question": "Na resolução esticada, como o TouchInjector e o AimEngine devem calcular os toques?",
+        "answer": "Atualização dinâmica de dimensões no Injetor: Recebe width e height e calcula coordenadas absolutas multiplicando os percentuais normalizados diretamente pela nova resolução.",
+        "options_presented": [
+          "Atualização dinâmica de dimensões no Injetor",
+          "Escala fixa virtual (0 a 32767)",
+          "Você decide"
+        ]
+      }
+    ],
+    "Injeção de Spoofing ASUS ROG Phone": [
+      {
+        "question": "Para liberar as opções de 90/120 FPS e gráficos no Ultra no Free Fire, como o WaydroidController deve aplicar as propriedades?",
+        "answer": "Injeção nativa via waydroid prop set: Aplica brand, manufacturer, model e name usando os comandos nativos de propriedades.",
+        "options_presented": [
+          "Injeção nativa via waydroid prop set",
+          "Modificação direta de arquivos de configuração",
+          "Você decide"
+        ]
+      },
+      {
+        "question": "Antes de alterar o modelo do dispositivo para o ASUS ROG Phone, como lidar com as propriedades originais do contêiner?",
+        "answer": "Backup automático prévio com comando de restauração: Salva backup em ~/.config/wayfire/device_backup.json e fornece wayfire spoof --restore.",
+        "options_presented": [
+          "Backup automático prévio com comando de restauração",
+          "Spoofing permanente sem backup",
+          "Você decide"
+        ]
+      },
+      {
+        "question": "Quando o spoofing do ROG Phone deve ser verificado e aplicado pelo sistema?",
+        "answer": "Verificação automática inteligente no lançamento: Ao iniciar o jogo, verifica se já é ASUS_I005D e só aplica se necessário.",
+        "options_presented": [
+          "Verificação automática inteligente no lançamento",
+          "Apenas por comando manual prévio",
+          "Configuração por perfil (toggle)",
+          "Você decide"
+        ]
+      },
+      {
+        "question": "Quais propriedades exatas de identificação de hardware devem compor o perfil do ROG Phone?",
+        "answer": "Conjunto completo essencial: ro.product.brand=asus, ro.product.manufacturer=asus, ro.product.model=ASUS_I005D, ro.product.name=ASUS_I005D, ro.product.device=ASUS_I005D.",
+        "options_presented": [
+          "Conjunto completo essencial (Brand, Manufacturer, Model, Name, Device)",
+          "Conjunto mínimo (apenas Model e Brand)",
+          "Você decide"
+        ]
+      }
+    ]
+  },
+  "deferred_ideas": [],
+  "canonical_refs": [
+    "docs/ARCHITECTURE.md",
+    "docs/KEYMAPPING.md",
+    "docs/ROADMAP.md"
+  ]
+}
