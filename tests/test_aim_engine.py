@@ -1,6 +1,8 @@
 """Unit tests for AimProcessor sensitivity engine, subpixel accumulation, and EMA smoothing."""
 
-from wayfire.core.aim_engine import AimProcessor
+from evdev import ecodes
+from wayfire.core.aim_engine import AimEngine, AimProcessor
+from wayfire.core.touch_injector import MockUInputSink, TouchInjector
 
 
 def test_sensitivity_scaling_independent() -> None:
@@ -78,3 +80,95 @@ def test_reset_state_clears_residue() -> None:
     assert processor.acc_y == 0.0
     assert processor.prev_dx == 0.0
     assert processor.prev_dy == 0.0
+
+
+def test_anti_border_trigger_at_75_percent() -> None:
+    """Verify that moving past 75% boundary triggers atomic 1ms reset cycle back to anchor."""
+    sink = MockUInputSink()
+    injector = TouchInjector(sink=sink, width=1920, height=1080)
+    processor = AimProcessor(sens_x=1.0, sens_y=1.0, smoothing=False)
+    engine = AimEngine(
+        processor=processor,
+        screen_width=1920,
+        screen_height=1080,
+        anchor_norm_x=0.5,
+        anchor_norm_y=0.5,
+        radius_norm=0.2,
+        threshold_ratio=0.75,
+    )
+    # anchor is (960, 540)
+    # radius_px is 0.2 * 1080 = 216
+    # threshold 75% is 216 * 0.75 = 162 pixels
+    engine.start_aim(injector)
+    assert engine.current_x == 960
+    assert engine.current_y == 540
+    assert engine.reset_count == 0
+
+    # Move 100px right (within 162px limit) -> no reset
+    cur_x, cur_y, reset = engine.update_aim(raw_dx=100, raw_dy=0, injector=injector)
+    assert cur_x == 1060
+    assert cur_y == 540
+    assert reset is False
+    assert engine.reset_count == 0
+
+    # Move another 70px right (total 170px > 162px threshold) -> triggers reset!
+    cur_x, cur_y, reset = engine.update_aim(raw_dx=70, raw_dy=0, injector=injector)
+    assert reset is True
+    assert engine.reset_count == 1
+    # Coordinates must be snapped back to anchor
+    assert cur_x == 960
+    assert cur_y == 540
+    assert engine.current_x == 960
+    assert engine.current_y == 540
+
+
+def test_continuous_360_rotation_infinite() -> None:
+    """Simulate rapid continuous one-directional mouse movement over 150 cycles without locking."""
+    sink = MockUInputSink()
+    injector = TouchInjector(sink=sink, width=1920, height=1080)
+    processor = AimProcessor(sens_x=1.0, sens_y=1.0, smoothing=False)
+    engine = AimEngine(processor=processor)
+
+    engine.start_aim(injector)
+
+    # Move right continuously 150 times with dx=50
+    for _ in range(150):
+        engine.update_aim(raw_dx=50, raw_dy=0, injector=injector)
+
+    # Must have triggered multiple anti-border resets
+    assert engine.reset_count > 10
+    # Must remain active and at/near anchor or within safe radius
+    dist_sq = (engine.current_x - engine.anchor_px[0]) ** 2 + (engine.current_y - engine.anchor_px[1]) ** 2
+    assert dist_sq <= engine.max_dist_sq
+
+
+def test_fire_button_slot_1_concurrency() -> None:
+    """Verify left click triggers Slot 1 fire button touch down and up while Slot 0 aim is active."""
+    sink = MockUInputSink()
+    injector = TouchInjector(sink=sink, width=1920, height=1080)
+    processor = AimProcessor(sens_x=1.0, sens_y=1.0, smoothing=False)
+    engine = AimEngine(processor=processor, screen_width=1920, screen_height=1080)
+
+    # Start aim on Slot 0
+    engine.start_aim(injector)
+    assert 0 in injector.active_slots
+
+    # Press left click (BTN_LEFT = 1) -> Fire on Slot 1
+    sink.recorded_events.clear()
+    engine.handle_mouse_button(code=ecodes.BTN_LEFT, value=1, injector=injector)
+    assert 1 in injector.active_slots
+    assert (ecodes.EV_ABS, ecodes.ABS_MT_SLOT, 1) in sink.recorded_events
+    fire_x = int(0.80 * 1920)
+    fire_y = int(0.75 * 1080)
+    assert (ecodes.EV_ABS, ecodes.ABS_MT_POSITION_X, fire_x) in sink.recorded_events
+    assert (ecodes.EV_ABS, ecodes.ABS_MT_POSITION_Y, fire_y) in sink.recorded_events
+
+    # Release left click (BTN_LEFT = 0) -> Release Slot 1
+    sink.recorded_events.clear()
+    engine.handle_mouse_button(code=ecodes.BTN_LEFT, value=0, injector=injector)
+    assert 1 not in injector.active_slots
+    assert (ecodes.EV_ABS, ecodes.ABS_MT_SLOT, 1) in sink.recorded_events
+    assert (ecodes.EV_ABS, ecodes.ABS_MT_TRACKING_ID, -1) in sink.recorded_events
+    # Slot 0 remains active
+    assert 0 in injector.active_slots
+
