@@ -21,7 +21,7 @@
     {
       "number": "4",
       "name": "Launcher Desktop e Polimento Competitivo",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "5",
@@ -30,9 +30,9 @@
     }
   ],
   "next": {
-    "command": "/gsd-progress --next",
-    "label": "Advance to the next step",
-    "reason": "Phase 04 of 5 · 60% · executing"
+    "command": "/gsd-plan-phase 5",
+    "label": "Plan Phase 5",
+    "reason": "Phase 04 complete · 83% · ready for phase 5"
   },
-  "updated_at": "2026-10-31T19:08:23.421Z"
+  "updated_at": "2026-10-31T19:36:50.000Z"
 }

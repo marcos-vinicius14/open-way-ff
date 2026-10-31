@@ -98,14 +98,14 @@ Plans:
   2. Algoritmo de proteção contra o bug do analógico realiza reset suave do analógico virtual ao suspender o mouse, impedindo travamento de boneco correndo em linha reta.
   3. Integração completa ponta a ponta: iniciar pelo launcher aplica resolução, inicia Waydroid, aplica spoofing, ativa o engine de toque e exibe o overlay.
 
-**Plans**: 1/2 plans executed
+**Plans**: 2/2 plans executed
 
 Plans:
 **Wave 1**
 - [x] 04-01: Algoritmo Anti-Bug do Analógico (SOCD Last Win & Micro-pulso 1ms) e GameSessionCoordinator
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 04-02: Launcher Desktop em GTK4 / Libadwaita, Painel de Saúde do Sistema e Central Unificada
+- [x] 04-02: Launcher Desktop em GTK4 / Libadwaita, Painel de Saúde do Sistema e Central Unificada
 
 ### Phase 5: Empacotamento, Permissões e Distribuição
 
@@ -134,5 +134,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Motor de Entrada e Sensibilidade X/Y (Core) | 3/3 | Complete    | 2026-10-31 |
 | 2. Comunicação com Waydroid e Gerenciamento de Perfis | 2/2 | Complete    | 2026-10-31 |
 | 3. Editor Visual de Teclas (Overlay Wayland) | 3/3 | Complete    | 2026-10-31 |
-| 4. Launcher Desktop e Polimento Competitivo | 1/2 | In Progress|  |
+| 4. Launcher Desktop e Polimento Competitivo | 2/2 | Complete    | 2026-10-31 |
 | 5. Empacotamento, Permissões e Distribuição | 0/2 | Not started | - |
