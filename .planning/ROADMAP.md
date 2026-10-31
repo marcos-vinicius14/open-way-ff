@@ -75,7 +75,7 @@ Plans:
   5. Arrastar, soltar, redimensionar áreas e excluir bolinhas funciona em tempo real com persistência no perfil ativo.
   6. Indicador OSD na tela exibe as teclas mapeadas durante o jogo com opacidade configurável de 0% a 100%.
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans executed
 
 Plans:
 **Wave 1**
@@ -85,7 +85,7 @@ Plans:
 - [x] 03-02: Implementação do fluxo de criação e edição estilo GG Mouse Pro (duplo clique, captura de tecla, arrastar e remover).
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 03-03: Renderização dos widgets de mapeamento (Tap, DPad, Aim, Fire) com controle de opacidade OSD e sincronização com o Profile Manager.
+- [x] 03-03: Renderização dos widgets de mapeamento (Tap, DPad, Aim, Fire) com controle de opacidade OSD e sincronização com o Profile Manager.
 
 ### Phase 4: Launcher Desktop e Polimento Competitivo
 
@@ -130,6 +130,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Motor de Entrada e Sensibilidade X/Y (Core) | 3/3 | Complete    | 2026-10-31 |
 | 2. Comunicação com Waydroid e Gerenciamento de Perfis | 2/2 | Complete    | 2026-10-31 |
-| 3. Editor Visual de Teclas (Overlay Wayland) | 2/3 | In Progress|  |
+| 3. Editor Visual de Teclas (Overlay Wayland) | 3/3 | In Progress|  |
 | 4. Launcher Desktop e Polimento Competitivo | 0/2 | Not started | - |
 | 5. Empacotamento, Permissões e Distribuição | 0/2 | Not started | - |
