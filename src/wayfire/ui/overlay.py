@@ -28,6 +28,11 @@ except (ValueError, ImportError):
 
 from gi.repository import Adw, Gdk, GLib, Gtk
 
+from wayfire.config.profile import WayFireProfile, create_default_profile
+from wayfire.config.profile_manager import ProfileManager
+from wayfire.ui.debounce_saver import ProfileDebounceSaver
+from wayfire.ui.floating_bar import FloatingTopBar
+from wayfire.ui.overlay_canvas import OverlayCanvas
 from wayfire.ui.status_pill import AimState, StatusPill
 
 
@@ -46,6 +51,8 @@ class WayFireOverlayWindow(Gtk.ApplicationWindow):
         self,
         app: Optional[Gtk.Application] = None,
         enable_layer_shell: bool = True,
+        profile: Optional[WayFireProfile] = None,
+        profile_manager: Optional[ProfileManager] = None,
     ) -> None:
         if app is not None:
             super().__init__(application=app)
@@ -80,13 +87,27 @@ class WayFireOverlayWindow(Gtk.ApplicationWindow):
             # Fallback to standard fullscreen window when Layer Shell is unavailable
             self.fullscreen()
 
-        # Build overlay hierarchy
-        self._overlay_container = Gtk.Overlay()
-        self.set_child(self._overlay_container)
+        # Profile and auto-save management
+        self.profile_manager = (
+            profile_manager if profile_manager is not None else ProfileManager()
+        )
+        self.profile = profile if profile is not None else create_default_profile()
+        self.debounce_saver = ProfileDebounceSaver(self.profile_manager)
 
-        # Base canvas for HUD and key widgets
-        self.canvas = Gtk.Fixed()
-        self._overlay_container.set_child(self.canvas)
+        # Build overlay hierarchy with ToastOverlay root
+        self.toast_overlay = Adw.ToastOverlay()
+        self.set_child(self.toast_overlay)
+
+        self._overlay_container = Gtk.Overlay()
+        self.toast_overlay.set_child(self._overlay_container)
+
+        # Interactive keymapping canvas
+        self.overlay_canvas = OverlayCanvas(
+            profile=self.profile,
+            debounce_saver=self.debounce_saver,
+            toast_overlay=self.toast_overlay,
+        )
+        self._overlay_container.set_child(self.overlay_canvas)
 
         # Status Pill positioned at top-center
         self.status_pill = StatusPill(on_edit_requested=self.set_edit_mode)
@@ -95,10 +116,19 @@ class WayFireOverlayWindow(Gtk.ApplicationWindow):
         self.status_pill.set_margin_top(8)
         self._overlay_container.add_overlay(self.status_pill)
 
+        # Retractable FloatingTopBar for Edit Mode
+        self.floating_top_bar = FloatingTopBar(
+            on_add_widget=self.overlay_canvas.add_special_widget,
+            on_opacity_changed=self._on_opacity_changed,
+            on_close_requested=self._on_edit_close_requested,
+        )
+        self.floating_top_bar.set_visible(False)
+        self._overlay_container.add_overlay(self.floating_top_bar)
+
         self.connect("realize", self._on_realize)
 
     def _init_styles(self) -> None:
-        """Inject transparent window styling."""
+        """Inject transparent window styling and widget appearances."""
         try:
             display = Gdk.Display.get_default()
             if display is not None:
@@ -132,6 +162,26 @@ class WayFireOverlayWindow(Gtk.ApplicationWindow):
                     .pill-edit-button:hover {
                         background: rgba(255, 255, 255, 0.3);
                     }
+                    .floating-top-bar {
+                        background-color: rgba(20, 20, 25, 0.90);
+                        border-radius: 12px;
+                        padding: 6px 14px;
+                        border: 1px solid rgba(255, 255, 255, 0.25);
+                        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+                    }
+                    .widget-view {
+                        background: rgba(20, 20, 25, 0.70);
+                        border: 2px solid rgba(255, 255, 255, 0.85);
+                        border-radius: 24px;
+                        min-width: 48px;
+                        min-height: 48px;
+                        color: #ffffff;
+                        font-weight: bold;
+                    }
+                    .widget-view.listening {
+                        border-color: #00e5ff;
+                        box-shadow: 0 0 10px #00e5ff;
+                    }
                 """
                 if hasattr(provider, "load_from_string"):
                     provider.load_from_string(css_data)
@@ -160,6 +210,15 @@ class WayFireOverlayWindow(Gtk.ApplicationWindow):
     def _on_realize(self, _widget: Gtk.Widget) -> None:
         self._apply_input_region()
 
+    def _on_opacity_changed(self, opacity: float) -> None:
+        """Update OSD opacity in active profile and request debounced save (D-10)."""
+        self.profile.ui_settings.osd_opacity = opacity
+        self.debounce_saver.request_save(self.profile)
+
+    def _on_edit_close_requested(self) -> None:
+        """Close Edit Mode, flush pending profile edits, and return to game mode."""
+        self.toggle_edit_mode()
+
     def set_mode(self, mode: OverlayMode) -> None:
         """Switch interaction mode and configure Layer Shell keyboard/input regions."""
         self.mode = mode
@@ -173,6 +232,16 @@ class WayFireOverlayWindow(Gtk.ApplicationWindow):
                 Gtk4LayerShell.set_keyboard_mode(
                     self, Gtk4LayerShell.KeyboardMode.NONE
                 )
+
+        if mode == OverlayMode.EDIT_MODE:
+            self.floating_top_bar.set_visible(True)
+            self.floating_top_bar.set_opacity_value(self.profile.ui_settings.osd_opacity)
+            self.status_pill.set_visible(False)
+        else:
+            self.floating_top_bar.set_visible(False)
+            self.debounce_saver.flush()
+            if self._pill_rect is not None and mode == OverlayMode.GAME_SUSPENDED:
+                self.status_pill.set_visible(True)
 
         self._apply_input_region()
 
