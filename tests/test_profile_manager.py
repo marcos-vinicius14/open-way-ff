@@ -181,3 +181,98 @@ def test_legacy_profile_migration() -> None:
     assert "resolution" in d
     assert "mouse_settings" in d
     assert "widgets" in d
+
+
+def test_profile_manager_crud_and_factory_default(tmp_path: Path) -> None:
+    """Verify ProfileManager initializes default_freefire.json, lists, saves, loads, and deletes."""
+    from wayfire.config.profile_manager import ProfileManager
+
+    profiles_dir = tmp_path / "profiles"
+    active_file = tmp_path / "active_profile"
+
+    mgr = ProfileManager(profiles_dir=profiles_dir, active_file=active_file)
+
+    # Factory default should be auto-created
+    assert "default_freefire" in mgr.list_profiles()
+    assert mgr.get_active_profile_name() == "default_freefire"
+
+    # Save custom profile
+    custom = WayFireProfile(profile_name="rush_mode", sens_x=2.2, sens_y=4.5)
+    mgr.save_profile(custom)
+    assert "rush_mode" in mgr.list_profiles()
+
+    # Load custom profile
+    loaded = mgr.load_profile("rush_mode")
+    assert loaded.profile_name == "rush_mode"
+    assert loaded.mouse_settings.sensitivity_x == 2.2
+
+    # Delete custom profile
+    assert mgr.delete_profile("rush_mode") is True
+    assert "rush_mode" not in mgr.list_profiles()
+
+
+def test_profile_manager_factory_protection(tmp_path: Path) -> None:
+    """Ensure attempting to delete default_freefire raises ValueError."""
+    from wayfire.config.profile_manager import ProfileManager
+
+    mgr = ProfileManager(profiles_dir=tmp_path / "profiles", active_file=tmp_path / "active")
+    with pytest.raises(ValueError, match="O perfil padrão de fábrica"):
+        mgr.delete_profile("default_freefire")
+
+
+def test_profile_manager_path_traversal_protection(tmp_path: Path) -> None:
+    """Ensure directory traversal attempts are sanitized or rejected."""
+    from wayfire.config.profile_manager import ProfileManager, sanitize_profile_name
+
+    mgr = ProfileManager(profiles_dir=tmp_path / "profiles", active_file=tmp_path / "active")
+
+    # Path traversal names: sanitize_profile_name extracts stem and strips ../
+    safe = sanitize_profile_name("../../../etc/shadow")
+    assert safe == "shadow"
+    assert "/" not in safe
+    assert ".." not in safe
+
+    with pytest.raises(ValueError, match="Nome de perfil inválido"):
+        sanitize_profile_name("../../..")
+
+
+def test_profile_manager_active_profile_switching(tmp_path: Path) -> None:
+    """Verify switching active profile and fallback behavior."""
+    from wayfire.config.profile_manager import ProfileManager
+
+    mgr = ProfileManager(profiles_dir=tmp_path / "profiles", active_file=tmp_path / "active")
+
+    # Create new profile
+    p = WayFireProfile(profile_name="sniper")
+    mgr.save_profile(p)
+
+    mgr.set_active_profile("sniper")
+    assert mgr.get_active_profile_name() == "sniper"
+    active_p = mgr.get_active_profile()
+    assert active_p.profile_name == "sniper"
+
+    # Non-existent profile raises FileNotFoundError
+    with pytest.raises(FileNotFoundError):
+        mgr.set_active_profile("non_existent")
+
+
+def test_profile_manager_import_export(tmp_path: Path) -> None:
+    """Verify importing and exporting profile JSON files."""
+    from wayfire.config.profile_manager import ProfileManager
+
+    mgr = ProfileManager(profiles_dir=tmp_path / "profiles", active_file=tmp_path / "active")
+
+    # Export default profile to external file
+    ext_file = tmp_path / "exported.json"
+    mgr.export_profile("default_freefire", ext_file)
+    assert ext_file.exists()
+
+    # Import back under new name
+    imported_path = mgr.import_profile(ext_file, name="imported_ff")
+    assert imported_path.exists()
+    assert "imported_ff" in mgr.list_profiles()
+
+    loaded = mgr.load_profile("imported_ff")
+    assert loaded.profile_name == "imported_ff"
+    assert len(loaded.widgets) == 14
+

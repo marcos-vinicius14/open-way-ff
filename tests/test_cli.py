@@ -208,3 +208,54 @@ def test_cmd_spoof_execution(tmp_path: Path) -> None:
     assert cmd_spoof(args_restore, controller=mock_ctrl) == 0
     mock_ctrl.restore_spoofing.assert_called_once()
 
+
+def test_cli_profile_subcommands(tmp_path: Path) -> None:
+    """Verify wayfire profile list, active, show, import, export, delete."""
+    from unittest.mock import MagicMock
+    from wayfire.cli.main import cmd_profile
+
+    mock_mgr = MagicMock()
+    mock_mgr.list_profiles.return_value = ["default_freefire", "custom_1"]
+    mock_mgr.get_active_profile_name.return_value = "default_freefire"
+
+    parser = build_parser()
+
+    # 1. profile list
+    args_list = parser.parse_args(["profile", "list"])
+    assert cmd_profile(args_list, manager=mock_mgr) == 0
+    mock_mgr.list_profiles.assert_called_once()
+
+    # 2. profile active (get)
+    args_active_get = parser.parse_args(["profile", "active"])
+    assert cmd_profile(args_active_get, manager=mock_mgr) == 0
+
+    # 3. profile active (--set)
+    args_active_set = parser.parse_args(["profile", "active", "--set", "custom_1"])
+    assert cmd_profile(args_active_set, manager=mock_mgr) == 0
+    mock_mgr.set_active_profile.assert_called_once_with("custom_1")
+
+    # 4. profile show
+    from wayfire.config.profile import create_default_profile
+
+    mock_mgr.load_profile.return_value = create_default_profile()
+    args_show = parser.parse_args(["profile", "show", "default_freefire"])
+    assert cmd_profile(args_show, manager=mock_mgr) == 0
+    mock_mgr.load_profile.assert_called_with("default_freefire")
+
+    # 5. profile import
+    args_import = parser.parse_args(["profile", "import", "/tmp/source.json", "--name", "new_p"])
+    assert cmd_profile(args_import, manager=mock_mgr) == 0
+    mock_mgr.import_profile.assert_called_once_with("/tmp/source.json", name="new_p")
+
+    # 6. profile export
+    args_export = parser.parse_args(["profile", "export", "default_freefire", "/tmp/dest.json"])
+    assert cmd_profile(args_export, manager=mock_mgr) == 0
+    mock_mgr.export_profile.assert_called_once_with("default_freefire", "/tmp/dest.json")
+
+    # 7. profile delete
+    mock_mgr.delete_profile.return_value = True
+    args_delete = parser.parse_args(["profile", "delete", "custom_1"])
+    assert cmd_profile(args_delete, manager=mock_mgr) == 0
+    mock_mgr.delete_profile.assert_called_once_with("custom_1")
+
+

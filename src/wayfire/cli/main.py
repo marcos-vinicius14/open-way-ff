@@ -10,6 +10,7 @@ from typing import Optional
 
 from evdev import InputDevice, ecodes
 from wayfire.config.profile import WayFireProfile
+from wayfire.config.profile_manager import ProfileManager
 from wayfire.core.aim_engine import AimEngine, AimProcessor
 from wayfire.core.mouse_capture import InputCaptureManager, detect_input_devices
 from wayfire.core.touch_injector import TouchInjector
@@ -87,8 +88,13 @@ def cmd_test(args: argparse.Namespace) -> int:
 
 def cmd_run(args: argparse.Namespace) -> int:
     """Execute live input bridge and emulation loop."""
-    profile_path = Path(args.profile) if args.profile else None
-    profile = WayFireProfile.load(profile_path)
+    if args.profile:
+        profile_path = Path(args.profile)
+        profile = WayFireProfile.load(profile_path)
+    else:
+        mgr = ProfileManager()
+        profile = mgr.get_active_profile()
+        profile_path = mgr.get_profile_path(profile.profile_name)
 
     width = args.width or profile.screen_width
     height = args.height or profile.screen_height
@@ -285,6 +291,90 @@ def cmd_spoof(args: argparse.Namespace, controller: Optional[WaydroidController]
     return 0
 
 
+def cmd_profile(args: argparse.Namespace, manager: Optional[ProfileManager] = None) -> int:
+    """Manage WayFire keymapping and configuration profiles."""
+    mgr = manager or ProfileManager()
+
+    if args.profile_action == "list":
+        profiles = mgr.list_profiles()
+        active = mgr.get_active_profile_name()
+        print("📁 [WayFire] Perfis Instalados:")
+        for p in profiles:
+            marker = "* [ATIVO]" if p == active else " "
+            print(f"  {marker:10} {p}")
+        return 0
+
+    if args.profile_action == "active":
+        if args.set:
+            try:
+                mgr.set_active_profile(args.set)
+                print(f"✅ [WayFire] Perfil ativo alterado para: {args.set}")
+                return 0
+            except (FileNotFoundError, ValueError) as exc:
+                print(f"❌ [WayFire] Erro: {exc}", file=sys.stderr)
+                return 1
+        else:
+            active = mgr.get_active_profile_name()
+            print(f"⭐ [WayFire] Perfil ativo: {active}")
+            return 0
+
+    if args.profile_action == "show":
+        name = args.name or mgr.get_active_profile_name()
+        try:
+            p = mgr.load_profile(name)
+        except (FileNotFoundError, ValueError) as exc:
+            print(f"❌ [WayFire] Erro: {exc}", file=sys.stderr)
+            return 1
+
+        print(f"📄 [WayFire] Perfil: {p.profile_name}")
+        print(f"🎮 Pacote do Jogo:  {p.game_package}")
+        print(f"🖥️ Resolução:       {p.resolution.width}x{p.resolution.height}")
+        print(f"🎯 Sensibilidade X: {p.mouse_settings.sensitivity_x}")
+        print(f"🎯 Sensibilidade Y: {p.mouse_settings.sensitivity_y}")
+        print(f"🔒 Tecla de Trava:  {p.mouse_settings.lock_hotkey}")
+        print(f"🧩 Widgets ({len(p.widgets)}):")
+        for w in p.widgets:
+            if hasattr(w, "key"):
+                print(f"   - [{w.type.upper()}] {w.id}: Tecla='{w.key}' em ({w.x}, {w.y})")
+            else:
+                print(f"   - [{w.type.upper()}] {w.id} em ({w.x}, {w.y})")
+        return 0
+
+    if args.profile_action == "import":
+        try:
+            dest = mgr.import_profile(args.path, name=args.name)
+            print(f"✅ [WayFire] Perfil importado com sucesso para: {dest}")
+            return 0
+        except Exception as exc:
+            print(f"❌ [WayFire] Erro ao importar: {exc}", file=sys.stderr)
+            return 1
+
+    if args.profile_action == "export":
+        try:
+            dest = mgr.export_profile(args.name, args.path)
+            print(f"✅ [WayFire] Perfil '{args.name}' exportado com sucesso para: {dest}")
+            return 0
+        except Exception as exc:
+            print(f"❌ [WayFire] Erro ao exportar: {exc}", file=sys.stderr)
+            return 1
+
+    if args.profile_action == "delete":
+        try:
+            success = mgr.delete_profile(args.name)
+            if success:
+                print(f"✅ [WayFire] Perfil '{args.name}' excluído com sucesso.")
+                return 0
+            else:
+                print(f"❌ [WayFire] Perfil '{args.name}' não encontrado.", file=sys.stderr)
+                return 1
+        except Exception as exc:
+            print(f"❌ [WayFire] Erro ao excluir: {exc}", file=sys.stderr)
+            return 1
+
+    print("Use: wayfire profile list | active | show | import | export | delete")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build command-line parser."""
     parser = argparse.ArgumentParser(
@@ -326,6 +416,35 @@ def build_parser() -> argparse.ArgumentParser:
     spoof_parser.add_argument("--apply", action="store_true", help="Force apply ASUS ROG Phone 5 properties")
     spoof_parser.add_argument("--restore", action="store_true", help="Restore original hardware properties from backup")
 
+    # Subcommand: profile
+    profile_parser = subparsers.add_parser("profile", help="Manage input mappings and configuration profiles")
+    profile_subparsers = profile_parser.add_subparsers(dest="profile_action", required=True)
+
+    # profile list
+    profile_subparsers.add_parser("list", help="List all installed profiles")
+
+    # profile active
+    active_parser = profile_subparsers.add_parser("active", help="Show or set the currently active profile")
+    active_parser.add_argument("--set", type=str, help="Set active profile by name")
+
+    # profile show
+    show_parser = profile_subparsers.add_parser("show", help="Display details of a profile")
+    show_parser.add_argument("name", nargs="?", type=str, help="Name of profile to inspect (default: active)")
+
+    # profile import
+    import_parser = profile_subparsers.add_parser("import", help="Import external JSON profile")
+    import_parser.add_argument("path", type=str, help="Path to JSON file to import")
+    import_parser.add_argument("--name", type=str, help="Destination profile name")
+
+    # profile export
+    export_parser = profile_subparsers.add_parser("export", help="Export profile to a file")
+    export_parser.add_argument("name", type=str, help="Name of profile to export")
+    export_parser.add_argument("path", type=str, help="Destination file path")
+
+    # profile delete
+    delete_parser = profile_subparsers.add_parser("delete", help="Delete a custom profile")
+    delete_parser.add_argument("name", type=str, help="Name of profile to delete")
+
     return parser
 
 
@@ -344,6 +463,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         return cmd_stop(args)
     if args.command == "spoof":
         return cmd_spoof(args)
+    if args.command == "profile":
+        return cmd_profile(args)
 
     return 0
 
