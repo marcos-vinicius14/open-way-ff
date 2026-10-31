@@ -1,0 +1,38 @@
+{
+  "contract": "1.0.0",
+  "flavor": "core",
+  "milestone": null,
+  "phases": [
+    {
+      "number": "1",
+      "name": "Motor de Entrada e Sensibilidade X/Y (Core)",
+      "status": "complete"
+    },
+    {
+      "number": "2",
+      "name": "Comunicação com Waydroid e Gerenciamento de Perfis",
+      "status": "pending"
+    },
+    {
+      "number": "3",
+      "name": "Editor Visual de Teclas (Overlay Wayland)",
+      "status": "pending"
+    },
+    {
+      "number": "4",
+      "name": "Launcher Desktop e Polimento Competitivo",
+      "status": "pending"
+    },
+    {
+      "number": "5",
+      "name": "Empacotamento, Permissões e Distribuição",
+      "status": "pending"
+    }
+  ],
+  "next": {
+    "command": "/gsd-progress --next",
+    "label": "Advance to the next step (plan phase 2)",
+    "reason": "Phase 2 of 5 — needs a plan"
+  },
+  "updated_at": "2026-10-31T03:27:45.254Z"
+}

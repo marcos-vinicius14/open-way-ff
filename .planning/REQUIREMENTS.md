@@ -6,33 +6,39 @@
 ## v1 Requirements
 
 ### Input & Sensitivity Engine
-- [ ] **CORE-01**: Injetor de toque virtual multitouch de baixa latência (<1ms) via Linux Kernel `/dev/uinput` (`python-evdev`).
-- [ ] **CORE-02**: Captura de baixo nível de mouse e teclado com hotkey de trava/destrava do cursor (suspender mouse).
-- [ ] **CORE-03**: Motor de sensibilidade horizontal (X) e vertical (Y) com multiplicador independente para subida de capa.
-- [ ] **CORE-04**: Algoritmo anti-borda com recentralização invisível de toque (1ms) para rotação contínua e infinita de câmera 360°.
+
+- [x] **CORE-01**: Injetor de toque virtual multitouch de baixa latência (<1ms) via Linux Kernel `/dev/uinput` (`python-evdev`).
+- [x] **CORE-02**: Captura de baixo nível de mouse e teclado com hotkey de trava/destrava do cursor (suspender mouse).
+- [x] **CORE-03**: Motor de sensibilidade horizontal (X) e vertical (Y) com multiplicador independente para subida de capa.
+- [x] **CORE-04**: Algoritmo anti-borda com recentralização invisível de toque (1ms) para rotação contínua e infinita de câmera 360°.
 
 ### Waydroid Control & Performance
+
 - [ ] **WAY-01**: Controlador de ciclo de vida do Waydroid em Python (iniciar/parar contêiner e sessão, lançamento direto de app).
 - [ ] **WAY-02**: Gerenciamento dinâmico de resoluções de tela competitivas (1920x1080 16:9, 1440x1080 e 1024x768 esticado 4:3).
 - [ ] **WAY-03**: Spoofing de propriedades de hardware (ASUS ROG Phone) para desbloquear 90/120 FPS e gráficos no Ultra no Free Fire.
 
 ### Keymapping & Profiles
+
 - [ ] **MAP-01**: Gerenciador de perfis JSON em `~/.config/wayfire/profiles/` com importação, exportação e perfil padrão competitivo (`default_freefire.json`).
 - [ ] **MAP-02**: Componentes de mapeamento customizáveis: TapButton (Single/Hold/Turbo), DPad analógico WASD, AimController (mira/câmera) e FireButton (gatilho).
 - [ ] **MAP-03**: Algoritmo de proteção contra o bug do analógico com reset suave ao suspender mouse.
 
 ### Graphical Overlay & UI
+
 - [ ] **UI-01**: Overlay transparente Wayland (GTK4 / Layer Shell) para visualização OSD com controle de opacidade (0% a 100%).
 - [ ] **UI-02**: Modo de edição interativo estilo GG Mouse Pro (duplo clique cria bolinha em escuta, captura instantânea da próxima tecla física, arrastar/soltar, exclusão e redimensionamento).
 - [ ] **UI-03**: Launcher principal estilo central de jogos com sliders de sensibilidade X/Y, seletor de resolução em 1 clique, seletor de perfis e botão "Jogar Free Fire".
 
 ### Packaging & Distribution
+
 - [ ] **PKG-01**: Script de instalação automatizada em um comando (`install.sh`) com configuração de permissões udev para `/dev/uinput`.
 - [ ] **PKG-02**: Empacotamento oficial para Arch Linux / AUR (`PKGBUILD`).
 
 ## v2 Requirements
 
 ### Advanced Features & Extended Ecosystem
+
 - **EXT-01**: Suporte a gravação e reprodução de macros competitivas complexas.
 - **EXT-02**: Integração com curvas de aceleração de mouse customizáveis (ex: curva Sigmoide / Raw Accel).
 - **EXT-03**: Perfis pré-definidos para outros jogos de tiro (COD Mobile, PUBG Mobile, Arena Breakout).
@@ -54,10 +60,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CORE-01 | Phase 1 | Pending |
-| CORE-02 | Phase 1 | Pending |
-| CORE-03 | Phase 1 | Pending |
-| CORE-04 | Phase 1 | Pending |
+| CORE-01 | Phase 1 | Complete |
+| CORE-02 | Phase 1 | Complete |
+| CORE-03 | Phase 1 | Complete |
+| CORE-04 | Phase 1 | Complete |
 | WAY-01 | Phase 2 | Pending |
 | WAY-02 | Phase 2 | Pending |
 | WAY-03 | Phase 2 | Pending |
