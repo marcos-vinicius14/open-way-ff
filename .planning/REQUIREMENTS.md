@@ -14,13 +14,13 @@
 
 ### Waydroid Control & Performance
 
-- [ ] **WAY-01**: Controlador de ciclo de vida do Waydroid em Python (iniciar/parar contêiner e sessão, lançamento direto de app).
-- [ ] **WAY-02**: Gerenciamento dinâmico de resoluções de tela competitivas (1920x1080 16:9, 1440x1080 e 1024x768 esticado 4:3).
-- [ ] **WAY-03**: Spoofing de propriedades de hardware (ASUS ROG Phone) para desbloquear 90/120 FPS e gráficos no Ultra no Free Fire.
+- [x] **WAY-01**: Controlador de ciclo de vida do Waydroid em Python (iniciar/parar contêiner e sessão, lançamento direto de app).
+- [x] **WAY-02**: Gerenciamento dinâmico de resoluções de tela competitivas (1920x1080 16:9, 1440x1080 e 1024x768 esticado 4:3).
+- [x] **WAY-03**: Spoofing de propriedades de hardware (ASUS ROG Phone) para desbloquear 90/120 FPS e gráficos no Ultra no Free Fire.
 
 ### Keymapping & Profiles
 
-- [ ] **MAP-01**: Gerenciador de perfis JSON em `~/.config/wayfire/profiles/` com importação, exportação e perfil padrão competitivo (`default_freefire.json`).
+- [x] **MAP-01**: Gerenciador de perfis JSON em `~/.config/wayfire/profiles/` com importação, exportação e perfil padrão competitivo (`default_freefire.json`).
 - [ ] **MAP-02**: Componentes de mapeamento customizáveis: TapButton (Single/Hold/Turbo), DPad analógico WASD, AimController (mira/câmera) e FireButton (gatilho).
 - [ ] **MAP-03**: Algoritmo de proteção contra o bug do analógico com reset suave ao suspender mouse.
 
@@ -64,10 +64,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CORE-02 | Phase 1 | Complete |
 | CORE-03 | Phase 1 | Complete |
 | CORE-04 | Phase 1 | Complete |
-| WAY-01 | Phase 2 | Pending |
-| WAY-02 | Phase 2 | Pending |
-| WAY-03 | Phase 2 | Pending |
-| MAP-01 | Phase 2 | Pending |
+| WAY-01 | Phase 2 | Complete |
+| WAY-02 | Phase 2 | Complete |
+| WAY-03 | Phase 2 | Complete |
+| MAP-01 | Phase 2 | Complete |
 | MAP-02 | Phase 3 | Pending |
 | UI-01 | Phase 3 | Pending |
 | UI-02 | Phase 3 | Pending |

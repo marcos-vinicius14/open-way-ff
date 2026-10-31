@@ -11,7 +11,7 @@ O WayFire transforma o Waydroid em uma plataforma de emulação competitiva de a
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 1: Motor de Entrada e Sensibilidade X/Y (Core)** - Injeção de toques virtuais multitouch via `/dev/uinput` e controle de mira com sensibilidade X/Y independente (completed 2026-10-31)
-- [ ] **Phase 2: Comunicação com Waydroid e Gerenciamento de Perfis** - Orquestração do contêiner Waydroid, resolução esticada, spoofing de 90/120 FPS e perfis JSON
+- [x] **Phase 2: Comunicação com Waydroid e Gerenciamento de Perfis** - Orquestração do contêiner Waydroid, resolução esticada, spoofing de 90/120 FPS e perfis JSON (completed 2026-10-31)
 - [ ] **Phase 3: Editor Visual de Teclas (Overlay Wayland)** - Overlay transparente GTK4/Layer Shell com criação intuitiva de botões estilo GG Mouse Pro
 - [ ] **Phase 4: Launcher Desktop e Polimento Competitivo** - Central estilo BlueStacks em GTK4/Libadwaita e algoritmo de proteção anti-bug do analógico
 - [ ] **Phase 5: Empacotamento, Permissões e Distribuição** - Script de instalação automatizada `install.sh`, regras udev e pacote `PKGBUILD` para Arch Linux / AUR
@@ -52,7 +52,7 @@ Plans:
   3. Propriedades de hardware do ASUS ROG Phone injetadas com sucesso, liberando opções de 90/120 FPS no menu gráfico do Free Fire.
   4. Profile Manager carrega, valida, salva e exporta perfis em `~/.config/wayfire/profiles/`, incluindo o perfil de fábrica `default_freefire.json`.
 
-**Plans**: 2/2 plans executed
+**Plans**: 2/2 plans complete
 
 Plans:
 **Wave 1**
@@ -124,7 +124,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Motor de Entrada e Sensibilidade X/Y (Core) | 3/3 | Complete    | 2026-10-31 |
-| 2. Comunicação com Waydroid e Gerenciamento de Perfis | 2/2 | In Progress|  |
+| 2. Comunicação com Waydroid e Gerenciamento de Perfis | 2/2 | Complete    | 2026-10-31 |
 | 3. Editor Visual de Teclas (Overlay Wayland) | 0/3 | Not started | - |
 | 4. Launcher Desktop e Polimento Competitivo | 0/2 | Not started | - |
 | 5. Empacotamento, Permissões e Distribuição | 0/2 | Not started | - |
