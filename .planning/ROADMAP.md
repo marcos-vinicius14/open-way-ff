@@ -78,8 +78,13 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
+**Wave 1**
 - [ ] 03-01: Criação da janela overlay transparente GTK4 com suporte a Layer Shell Wayland e toggle de modo F1.
+
+**Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 03-02: Implementação do fluxo de criação e edição estilo GG Mouse Pro (duplo clique, captura de tecla, arrastar e remover).
+
+**Wave 3** *(blocked on Wave 2 completion)*
 - [ ] 03-03: Renderização dos widgets de mapeamento (Tap, DPad, Aim, Fire) com controle de opacidade OSD e sincronização com o Profile Manager.
 
 ### Phase 4: Launcher Desktop e Polimento Competitivo
