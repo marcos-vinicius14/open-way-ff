@@ -156,3 +156,153 @@ def test_keymap_engine_macro_trigger(test_setup):
 
     engine.poll_tick()
     assert (ecodes.EV_ABS, ecodes.ABS_MT_POSITION_X, 100) in sink.recorded_events
+
+
+def test_socd_last_win_horizontal_strafe(test_setup):
+    """Verify Snap Tap (SOCD Last Win) resolution for horizontal strafing per D-12."""
+    engine, profile, sink, _, _ = test_setup
+    dpad = DPadWidget(
+        id="dpad_test",
+        x=500.0,
+        y=500.0,
+        radius=100.0,
+        keys={"up": "W", "down": "S", "left": "A", "right": "D"},
+    )
+    profile.widgets.append(dpad)
+
+    # 1. Press A -> Left (x=400, y=500)
+    engine.handle_key_event(ecodes.KEY_A, 1)
+    assert engine.horizontal_history == ["left"]
+    assert (ecodes.EV_ABS, ecodes.ABS_MT_SLOT, 2) in sink.recorded_events
+    assert (ecodes.EV_ABS, ecodes.ABS_MT_POSITION_X, 400) in sink.recorded_events
+
+    # 2. Press D without releasing A -> Right wins (Last Win: x=600, y=500)
+    sink.recorded_events.clear()
+    engine.handle_key_event(ecodes.KEY_D, 1)
+    assert engine.horizontal_history == ["left", "right"]
+    assert (ecodes.EV_ABS, ecodes.ABS_MT_POSITION_X, 600) in sink.recorded_events
+
+    # 3. Release D with A still pressed -> Immediately resumes Left (x=400, y=500)
+    sink.recorded_events.clear()
+    engine.handle_key_event(ecodes.KEY_D, 0)
+    assert engine.horizontal_history == ["left"]
+    assert (ecodes.EV_ABS, ecodes.ABS_MT_POSITION_X, 400) in sink.recorded_events
+
+    # 4. Release A -> Slot 2 released
+    sink.recorded_events.clear()
+    engine.handle_key_event(ecodes.KEY_A, 0)
+    assert engine.horizontal_history == []
+    assert (ecodes.EV_ABS, ecodes.ABS_MT_TRACKING_ID, -1) in sink.recorded_events
+
+
+def test_socd_last_win_vertical_strafe(test_setup):
+    """Verify Snap Tap (SOCD Last Win) resolution for vertical strafing per D-12."""
+    engine, profile, sink, _, _ = test_setup
+    dpad = DPadWidget(
+        id="dpad_test",
+        x=500.0,
+        y=500.0,
+        radius=100.0,
+        keys={"up": "W", "down": "S", "left": "A", "right": "D"},
+    )
+    profile.widgets.append(dpad)
+
+    # 1. Press W -> Up (x=500, y=400)
+    engine.handle_key_event(ecodes.KEY_W, 1)
+    assert engine.vertical_history == ["up"]
+    assert (ecodes.EV_ABS, ecodes.ABS_MT_POSITION_Y, 400) in sink.recorded_events
+
+    # 2. Press S without releasing W -> Down wins (Last Win: x=500, y=600)
+    sink.recorded_events.clear()
+    engine.handle_key_event(ecodes.KEY_S, 1)
+    assert engine.vertical_history == ["up", "down"]
+    assert (ecodes.EV_ABS, ecodes.ABS_MT_POSITION_Y, 600) in sink.recorded_events
+
+    # 3. Release S with W still pressed -> Immediately resumes Up (x=500, y=400)
+    sink.recorded_events.clear()
+    engine.handle_key_event(ecodes.KEY_S, 0)
+    assert engine.vertical_history == ["up"]
+    assert (ecodes.EV_ABS, ecodes.ABS_MT_POSITION_Y, 400) in sink.recorded_events
+
+    # 4. Release W -> Slot 2 released
+    sink.recorded_events.clear()
+    engine.handle_key_event(ecodes.KEY_W, 0)
+    assert engine.vertical_history == []
+    assert (ecodes.EV_ABS, ecodes.ABS_MT_TRACKING_ID, -1) in sink.recorded_events
+
+
+def test_dpad_reset_releases_slot_2_and_clears_keys(test_setup):
+    """Verify reset_dpad() clears all directional tracking and releases slot 2 per D-09."""
+    engine, profile, sink, _, _ = test_setup
+    dpad = DPadWidget(
+        id="dpad_test",
+        x=300.0,
+        y=300.0,
+        radius=100.0,
+        keys={"up": "W", "down": "S", "left": "A", "right": "D"},
+    )
+    profile.widgets.append(dpad)
+
+    engine.handle_key_event(ecodes.KEY_W, 1)
+    engine.handle_key_event(ecodes.KEY_A, 1)
+    assert len(engine.active_dpad_keys) == 2
+    assert "dpad" in engine.active_widget_touches
+
+    sink.recorded_events.clear()
+    engine.reset_dpad()
+
+    assert len(engine.active_dpad_keys) == 0
+    assert len(engine.horizontal_history) == 0
+    assert len(engine.vertical_history) == 0
+    assert "dpad" not in engine.active_widget_touches
+    assert (ecodes.EV_ABS, ecodes.ABS_MT_SLOT, 2) in sink.recorded_events
+    assert (ecodes.EV_ABS, ecodes.ABS_MT_TRACKING_ID, -1) in sink.recorded_events
+
+
+def test_recenter_dpad_micro_pulse_1ms(test_setup):
+    """Verify recenter_dpad() sends 1ms touch_down/touch_up at DPad center per D-10."""
+    engine, profile, sink, _, _ = test_setup
+    dpad = DPadWidget(
+        id="dpad_test",
+        x=450.0,
+        y=550.0,
+        radius=80.0,
+        keys={"up": "W", "down": "S", "left": "A", "right": "D"},
+    )
+    profile.widgets.append(dpad)
+
+    sink.recorded_events.clear()
+    engine.recenter_dpad()
+
+    # Slot 2 should have down at (450, 550) then up
+    assert (ecodes.EV_ABS, ecodes.ABS_MT_SLOT, 2) in sink.recorded_events
+    assert (ecodes.EV_ABS, ecodes.ABS_MT_POSITION_X, 450) in sink.recorded_events
+    assert (ecodes.EV_ABS, ecodes.ABS_MT_POSITION_Y, 550) in sink.recorded_events
+    assert (ecodes.EV_ABS, ecodes.ABS_MT_TRACKING_ID, -1) in sink.recorded_events
+
+
+def test_panic_reset_releases_all_touch_slots(test_setup):
+    """Verify panic_reset() clears slots 0 to 9, resets dynamic pool and recenters per D-11."""
+    engine, profile, sink, _, _ = test_setup
+    dpad = DPadWidget(
+        id="dpad_test",
+        x=400.0,
+        y=400.0,
+        radius=100.0,
+        keys={"up": "W", "down": "S", "left": "A", "right": "D"},
+    )
+    profile.widgets.append(dpad)
+
+    # Simulate some active touches
+    engine.active_widget_touches["tap_1"] = 3
+    engine.tap_slots.remove(3)
+
+    sink.recorded_events.clear()
+    engine.panic_reset()
+
+    # Check all slots 0-9 received touch_up
+    for s in range(10):
+        assert (ecodes.EV_ABS, ecodes.ABS_MT_SLOT, s) in sink.recorded_events
+
+    assert engine.active_widget_touches == {}
+    assert engine.tap_slots == [3, 4, 5, 6, 7, 8, 9]

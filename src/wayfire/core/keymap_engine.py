@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import math
+import time
 from typing import Callable, Optional
 
 from evdev import ecodes
@@ -50,6 +51,8 @@ class KeymapEngine:
 
         # Active state tracking
         self.active_dpad_keys: set[str] = set()
+        self.horizontal_history: list[str] = []
+        self.vertical_history: list[str] = []
         self.active_widget_touches: dict[str, int] = {}  # widget_id -> slot
         # Dynamic tap slots (Slot 0 is Aim, Slot 1 is Fire, Slot 2 is DPad)
         self.tap_slots: list[int] = [3, 4, 5, 6, 7, 8, 9]
@@ -84,8 +87,20 @@ class KeymapEngine:
 
             if direction_matched is not None:
                 if is_pressed:
+                    if direction_matched in ("left", "right"):
+                        if direction_matched in self.horizontal_history:
+                            self.horizontal_history.remove(direction_matched)
+                        self.horizontal_history.append(direction_matched)
+                    elif direction_matched in ("up", "down"):
+                        if direction_matched in self.vertical_history:
+                            self.vertical_history.remove(direction_matched)
+                        self.vertical_history.append(direction_matched)
                     self.active_dpad_keys.add(direction_matched)
                 else:
+                    if direction_matched in self.horizontal_history:
+                        self.horizontal_history.remove(direction_matched)
+                    if direction_matched in self.vertical_history:
+                        self.vertical_history.remove(direction_matched)
                     self.active_dpad_keys.discard(direction_matched)
                 self._update_dpad_vector(dpad)
                 return True
@@ -116,18 +131,14 @@ class KeymapEngine:
         return handled
 
     def _update_dpad_vector(self, dpad: DPadWidget) -> None:
-        """Calculate 8-directional analog movement vector and inject on slot 2."""
+        """Calculate 8-directional analog movement vector with SOCD Last Win on slot 2."""
         dx = 0.0
         dy = 0.0
 
-        if "up" in self.active_dpad_keys:
-            dy -= 1.0
-        if "down" in self.active_dpad_keys:
-            dy += 1.0
-        if "left" in self.active_dpad_keys:
-            dx -= 1.0
-        if "right" in self.active_dpad_keys:
-            dx += 1.0
+        if self.horizontal_history:
+            dx = -1.0 if self.horizontal_history[-1] == "left" else 1.0
+        if self.vertical_history:
+            dy = -1.0 if self.vertical_history[-1] == "up" else 1.0
 
         slot = 2  # Dedicated analog slot
 
@@ -145,6 +156,32 @@ class KeymapEngine:
 
             self.active_widget_touches["dpad"] = slot
             self.injector.touch_down(slot, target_x, target_y)
+
+    def reset_dpad(self) -> None:
+        """Release analog touch on slot 2 and clear all directional history per D-09."""
+        self.active_dpad_keys.clear()
+        self.horizontal_history.clear()
+        self.vertical_history.clear()
+        if "dpad" in self.active_widget_touches:
+            self.active_widget_touches.pop("dpad")
+        self.injector.touch_up(2)
+
+    def recenter_dpad(self, dpad: Optional[DPadWidget] = None) -> None:
+        """Inject 1ms micro-pulse at virtual D-Pad center per D-10."""
+        target_dpad = dpad or next((w for w in self.profile.widgets if isinstance(w, DPadWidget)), None)
+        if target_dpad is not None:
+            self.injector.touch_down(2, target_dpad.x, target_dpad.y)
+            time.sleep(0.001)  # 1ms micro-pulse
+            self.injector.touch_up(2)
+
+    def panic_reset(self) -> None:
+        """Release all touch slots (0-9), reset dynamic slots and recenter analog per D-11."""
+        for slot in range(10):
+            self.injector.touch_up(slot)
+        self.active_widget_touches.clear()
+        self.tap_slots = [3, 4, 5, 6, 7, 8, 9]
+        self.reset_dpad()
+        self.recenter_dpad()
 
     def handle_mouse_button(self, code: int, value: int) -> bool:
         """Handle physical mouse button click (BTN_LEFT, BTN_RIGHT, BTN_SIDE, etc.)."""

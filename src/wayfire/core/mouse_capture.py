@@ -5,6 +5,7 @@ from __future__ import annotations
 import selectors
 import signal
 import sys
+import time
 from typing import Any, Callable, Optional
 import evdev
 from evdev import InputDevice, ecodes
@@ -66,6 +67,10 @@ class InputCaptureManager:
 
         self.is_aim_locked: bool = False
         self.is_grabbed: bool = False
+
+        self.last_suspend_time: float = 0.0
+        self.panic_double_tap_threshold: float = 0.350  # 350ms per D-11
+        self.on_panic: Optional[Callable[[], None]] = None
 
         self.on_mouse_move: Optional[Callable[[int, int], None]] = None
         self.on_mouse_button: Optional[Callable[[int, int], None]] = None
@@ -150,7 +155,14 @@ class InputCaptureManager:
                         self.on_keyboard_event(ev.code, ev.value)
                     if ev.value == 1:  # Key press
                         if ev.code == self.suspend_key:
-                            self.toggle_aim_lock()
+                            now = time.monotonic()
+                            delta = now - self.last_suspend_time
+                            self.last_suspend_time = now
+                            if delta <= self.panic_double_tap_threshold and self.on_panic is not None:
+                                self.last_suspend_time = 0.0
+                                self.on_panic()
+                            else:
+                                self.toggle_aim_lock()
                         elif self.on_hotkey is not None:
                             self.on_hotkey(ev.code)
 

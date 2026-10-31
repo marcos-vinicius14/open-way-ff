@@ -149,3 +149,56 @@ def test_cleanup_guarantees_ungrab() -> None:
     manager.cleanup()
     assert manager.is_grabbed is False
     assert mouse.ungrab_called is True
+
+
+def test_panic_double_tap_detection() -> None:
+    """Rapid double tap on F1 (<350ms) triggers on_panic callback per D-11."""
+    kbd = FakeInputDevice("Keyboard", 11, {})
+    manager = InputCaptureManager(keyboard_dev=kbd)
+    panic_mock = MagicMock()
+    manager.on_panic = panic_mock
+
+    # First tap at t=10.0
+    with patch("time.monotonic", return_value=10.0):
+        kbd.push_events([FakeEvent(ecodes.EV_KEY, ecodes.KEY_F1, 1)])
+        with patch.object(manager._selector, "select", return_value=[(MagicMock(data=("keyboard", kbd)), 1)]):
+            manager.poll_events(timeout=0)
+
+    assert manager.is_aim_locked is True  # First tap toggles lock
+    assert panic_mock.call_count == 0
+
+    # Second tap at t=10.200 (delta = 200ms < 350ms)
+    with patch("time.monotonic", return_value=10.200):
+        kbd.push_events([FakeEvent(ecodes.EV_KEY, ecodes.KEY_F1, 1)])
+        with patch.object(manager._selector, "select", return_value=[(MagicMock(data=("keyboard", kbd)), 1)]):
+            manager.poll_events(timeout=0)
+
+    assert panic_mock.call_count == 1
+    manager.cleanup()
+
+
+def test_slow_f1_taps_trigger_toggle() -> None:
+    """Slow taps on F1 (>350ms) trigger normal toggle_aim_lock twice per D-11."""
+    kbd = FakeInputDevice("Keyboard", 11, {})
+    manager = InputCaptureManager(keyboard_dev=kbd)
+    panic_mock = MagicMock()
+    manager.on_panic = panic_mock
+
+    # First tap at t=10.0
+    with patch("time.monotonic", return_value=10.0):
+        kbd.push_events([FakeEvent(ecodes.EV_KEY, ecodes.KEY_F1, 1)])
+        with patch.object(manager._selector, "select", return_value=[(MagicMock(data=("keyboard", kbd)), 1)]):
+            manager.poll_events(timeout=0)
+
+    assert manager.is_aim_locked is True
+    assert panic_mock.call_count == 0
+
+    # Second tap at t=10.500 (delta = 500ms > 350ms)
+    with patch("time.monotonic", return_value=10.500):
+        kbd.push_events([FakeEvent(ecodes.EV_KEY, ecodes.KEY_F1, 1)])
+        with patch.object(manager._selector, "select", return_value=[(MagicMock(data=("keyboard", kbd)), 1)]):
+            manager.poll_events(timeout=0)
+
+    assert manager.is_aim_locked is False  # Toggled off
+    assert panic_mock.call_count == 0
+    manager.cleanup()
