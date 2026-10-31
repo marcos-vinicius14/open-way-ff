@@ -52,11 +52,11 @@ Plans:
   3. Propriedades de hardware do ASUS ROG Phone injetadas com sucesso, liberando opções de 90/120 FPS no menu gráfico do Free Fire.
   4. Profile Manager carrega, valida, salva e exporta perfis em `~/.config/wayfire/profiles/`, incluindo o perfil de fábrica `default_freefire.json`.
 
-**Plans**: 2 plans
+**Plans**: 1/2 plans executed
 
 Plans:
 **Wave 1**
-- [ ] 02-01: Implementação da classe `WaydroidController` com controle de sessão, troca de resolução esticada e spoofing ROG Phone.
+- [x] 02-01: Implementação da classe `WaydroidController` com controle de sessão, troca de resolução esticada e spoofing ROG Phone.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 02-02: Implementação do `ProfileManager` com serialização JSON, validação de schema e geração do `default_freefire.json`.
@@ -124,7 +124,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Motor de Entrada e Sensibilidade X/Y (Core) | 3/3 | Complete    | 2026-10-31 |
-| 2. Comunicação com Waydroid e Gerenciamento de Perfis | 0/2 | Not started | - |
+| 2. Comunicação com Waydroid e Gerenciamento de Perfis | 1/2 | In Progress|  |
 | 3. Editor Visual de Teclas (Overlay Wayland) | 0/3 | Not started | - |
 | 4. Launcher Desktop e Polimento Competitivo | 0/2 | Not started | - |
 | 5. Empacotamento, Permissões e Distribuição | 0/2 | Not started | - |
