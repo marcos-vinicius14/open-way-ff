@@ -70,6 +70,7 @@ class InputCaptureManager:
         self.on_mouse_move: Optional[Callable[[int, int], None]] = None
         self.on_mouse_button: Optional[Callable[[int, int], None]] = None
         self.on_hotkey: Optional[Callable[[int], None]] = None
+        self.on_keyboard_event: Optional[Callable[[int, int], None]] = None
         self.on_lock_changed: Optional[Callable[[bool], None]] = None
 
         self._selector: selectors.BaseSelector = (
@@ -145,6 +146,8 @@ class InputCaptureManager:
                 processed.append((device_type, ev))
 
                 if device_type == "keyboard" and ev.type == ecodes.EV_KEY:
+                    if self.on_keyboard_event is not None:
+                        self.on_keyboard_event(ev.code, ev.value)
                     if ev.value == 1:  # Key press
                         if ev.code == self.suspend_key:
                             self.toggle_aim_lock()

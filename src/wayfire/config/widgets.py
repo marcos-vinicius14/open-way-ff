@@ -48,7 +48,9 @@ class DPadWidget(BaseWidget):
     x: float | int = 0
     y: float | int = 0
     radius: float | int = 90
-    keys: dict[str, str] = field(default_factory=lambda: {"up": "W", "down": "S", "left": "A", "right": "D"})
+    keys: dict[str, str] = field(
+        default_factory=lambda: {"up": "W", "down": "S", "left": "A", "right": "D"}
+    )
     deadzone: float = 0.1
     type: str = "dpad"
 
@@ -111,6 +113,45 @@ class FireWidget(BaseWidget):
         }
 
 
+@dataclass
+class MacroStep:
+    """Individual touch action step within a sequential macro."""
+
+    x: float | int
+    y: float | int
+    delay_ms: int = 30
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "x": self.x,
+            "y": self.y,
+            "delay_ms": self.delay_ms,
+        }
+
+
+@dataclass
+class MacroWidget(BaseWidget):
+    """Multi-touch sequential macro triggered by a single key/button (D-16)."""
+
+    key: str = ""
+    steps: list[MacroStep] = field(default_factory=list)
+    delay_ms: int = 30
+    x: float | int = 0
+    y: float | int = 0
+    type: str = "macro"
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "type": self.type,
+            "key": self.key,
+            "x": self.x,
+            "y": self.y,
+            "delay_ms": self.delay_ms,
+            "steps": [s.to_dict() if hasattr(s, "to_dict") else dict(s) for s in self.steps],
+        }
+
+
 class WidgetFactory:
     """Discriminator factory for serializing and deserializing polymorphic widgets."""
 
@@ -119,6 +160,7 @@ class WidgetFactory:
         "dpad": DPadWidget,
         "aim": AimWidget,
         "fire": FireWidget,
+        "macro": MacroWidget,
     }
 
     @classmethod
@@ -139,20 +181,26 @@ class WidgetFactory:
         w_type = widget_type.lower()
         target_cls = cls._REGISTRY.get(w_type)
         if target_cls is None:
-            raise ValueError(f"Tipo de widget desconhecido: '{widget_type}'. Tipos suportados: {list(cls._REGISTRY.keys())}")
+            raise ValueError(
+                f"Tipo de widget desconhecido: '{widget_type}'. Tipos suportados: {list(cls._REGISTRY.keys())}"
+            )
 
         widget_id = data.get("id")
         if not widget_id or not isinstance(widget_id, str):
             raise ValueError("Campo obrigatório 'id' ausente ou inválido no widget.")
 
         if "x" not in data or "y" not in data:
-            raise ValueError(f"Campos de coordenadas 'x' e 'y' são obrigatórios no widget '{widget_id}'.")
+            raise ValueError(
+                f"Campos de coordenadas 'x' e 'y' são obrigatórios no widget '{widget_id}'."
+            )
 
         try:
             x = float(data["x"])
             y = float(data["y"])
         except (ValueError, TypeError) as exc:
-            raise ValueError(f"Coordenadas 'x' e 'y' devem ser numéricas no widget '{widget_id}'.") from exc
+            raise ValueError(
+                f"Coordenadas 'x' e 'y' devem ser numéricas no widget '{widget_id}'."
+            ) from exc
 
         if target_cls is TapWidget:
             return TapWidget(
@@ -177,8 +225,16 @@ class WidgetFactory:
             )
 
         if target_cls is AimWidget:
-            sens_x = float(data["sensitivity_x"]) if "sensitivity_x" in data and data["sensitivity_x"] is not None else None
-            sens_y = float(data["sensitivity_y"]) if "sensitivity_y" in data and data["sensitivity_y"] is not None else None
+            sens_x = (
+                float(data["sensitivity_x"])
+                if "sensitivity_x" in data and data["sensitivity_x"] is not None
+                else None
+            )
+            sens_y = (
+                float(data["sensitivity_y"])
+                if "sensitivity_y" in data and data["sensitivity_y"] is not None
+                else None
+            )
             return AimWidget(
                 id=widget_id,
                 x=x,
@@ -195,6 +251,30 @@ class WidgetFactory:
                 key=str(data.get("key", "Mouse_Left")),
                 x=x,
                 y=y,
+            )
+
+        if target_cls is MacroWidget:
+            steps_raw = data.get("steps", [])
+            steps: list[MacroStep] = []
+            if isinstance(steps_raw, list):
+                for s in steps_raw:
+                    if isinstance(s, dict):
+                        steps.append(
+                            MacroStep(
+                                x=float(s.get("x", x)),
+                                y=float(s.get("y", y)),
+                                delay_ms=int(s.get("delay_ms", 30)),
+                            )
+                        )
+                    elif isinstance(s, MacroStep):
+                        steps.append(s)
+            return MacroWidget(
+                id=widget_id,
+                key=str(data.get("key", "")),
+                x=x,
+                y=y,
+                delay_ms=int(data.get("delay_ms", 30)),
+                steps=steps,
             )
 
         # Fallback for custom registered widgets

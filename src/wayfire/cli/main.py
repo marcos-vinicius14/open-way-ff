@@ -12,6 +12,7 @@ from evdev import InputDevice, ecodes
 from wayfire.config.profile import WayFireProfile
 from wayfire.config.profile_manager import ProfileManager
 from wayfire.core.aim_engine import AimEngine, AimProcessor
+from wayfire.core.keymap_engine import KeymapEngine
 from wayfire.core.mouse_capture import InputCaptureManager, detect_input_devices
 from wayfire.core.touch_injector import TouchInjector
 from wayfire.ui.terminal_hud import TerminalHUD
@@ -142,6 +143,8 @@ def cmd_run(args: argparse.Namespace) -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
+    keymap_engine = KeymapEngine(profile=profile, injector=injector)
+
     with InputCaptureManager(mouse_dev=mouse_dev, keyboard_dev=kbd_dev, suspend_key=suspend_key) as capture:
         capture.setup_signal_handlers()
 
@@ -158,6 +161,7 @@ def cmd_run(args: argparse.Namespace) -> int:
 
         def _on_btn(code: int, value: int) -> None:
             engine.handle_mouse_button(code, value, injector)
+            keymap_engine.handle_mouse_button(code, value)
 
         def _on_key(code: int) -> None:
             if handle_calibration_hotkey(code, processor, profile, profile_path):
@@ -168,6 +172,16 @@ def cmd_run(args: argparse.Namespace) -> int:
                     reset_count=engine.reset_count,
                     force=True,
                 )
+
+        def _on_keyboard_event(code: int, value: int) -> None:
+            if value == 1 and code == ecodes.KEY_F3:
+                # Toggle OSD opacity per D-10
+                if profile.ui_settings.osd_opacity > 0.0:
+                    profile.ui_settings.osd_opacity = 0.0
+                else:
+                    profile.ui_settings.osd_opacity = 0.70
+                return
+            keymap_engine.handle_key_event(code, value)
 
         def _on_lock_change(locked: bool) -> None:
             if not locked:
@@ -183,6 +197,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         capture.on_mouse_move = _on_move
         capture.on_mouse_button = _on_btn
         capture.on_hotkey = _on_key
+        capture.on_keyboard_event = _on_keyboard_event
         capture.on_lock_changed = _on_lock_change
 
         hud.render(is_locked=False, sens_x=processor.sens_x, sens_y=processor.sens_y, force=True)
@@ -190,6 +205,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         try:
             while True:
                 capture.poll_events(timeout=0.005)
+                keymap_engine.poll_tick()
         except KeyboardInterrupt:
             pass
         finally:
