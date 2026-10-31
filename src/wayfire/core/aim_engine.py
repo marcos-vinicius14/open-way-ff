@@ -126,6 +126,19 @@ class AimEngine:
         self.is_aim_active: bool = False
         self.fire_slot: int = 1
 
+    def set_screen_dimensions(self, width: int, height: int) -> None:
+        """Dynamically update active screen resolution and recalculate pixel anchor/radius."""
+        self.screen_width = max(1, int(width))
+        self.screen_height = max(1, int(height))
+        self.anchor_px = (
+            int(self.anchor_norm_x * self.screen_width),
+            int(self.anchor_norm_y * self.screen_height),
+        )
+        self.radius_px = int(self.radius_norm * min(self.screen_width, self.screen_height))
+        self.max_dist_sq = (self.radius_px * self.threshold_ratio) ** 2
+        self.current_x = self.anchor_px[0]
+        self.current_y = self.anchor_px[1]
+
     def start_aim(self, injector: TouchInjector) -> None:
         """Initiate aim tracking by placing touch on Slot 0 at anchor position."""
         if not self.is_aim_active:

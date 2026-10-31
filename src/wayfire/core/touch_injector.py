@@ -87,6 +87,11 @@ class TouchInjector:
                 "or appropriate udev rules are installed."
             ) from exc
 
+    def set_screen_dimensions(self, width: int, height: int) -> None:
+        """Dynamically update screen boundary limits for touch clamping."""
+        self.width = max(1, int(width))
+        self.height = max(1, int(height))
+
     def _get_next_tracking_id(self) -> int:
         """Atomically generate and recycle tracking ID between 1 and 65535."""
         tid = self._next_tracking_id
