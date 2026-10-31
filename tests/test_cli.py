@@ -259,3 +259,24 @@ def test_cli_profile_subcommands(tmp_path: Path) -> None:
     mock_mgr.delete_profile.assert_called_once_with("custom_1")
 
 
+def test_cli_launcher_subcommand_and_default() -> None:
+    """Verify 'wayfire launcher' and 'wayfire' (no subcommand) route to cmd_launcher."""
+    from unittest.mock import patch
+    parser = build_parser()
+
+    args_launcher = parser.parse_args(["launcher"])
+    assert args_launcher.command == "launcher"
+
+    args_default = parser.parse_args([])
+    assert args_default.command is None
+
+    with patch("wayfire.cli.main.cmd_launcher", return_value=0) as mock_launch:
+        assert main(["launcher"]) == 0
+        mock_launch.assert_called_once()
+
+    with patch("wayfire.cli.main.cmd_launcher", return_value=0) as mock_launch:
+        assert main([]) == 0
+        mock_launch.assert_called_once()
+
+
+

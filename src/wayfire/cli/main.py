@@ -397,7 +397,10 @@ def build_parser() -> argparse.ArgumentParser:
         prog="wayfire",
         description="WayFire 🔥 - Native Linux input bridge for competitive Free Fire emulation",
     )
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers = parser.add_subparsers(dest="command", required=False)
+
+    # Subcommand: launcher
+    subparsers.add_parser("launcher", help="Open the WayFire GTK4 desktop game center")
 
     # Subcommand: run
     run_parser = subparsers.add_parser("run", help="Start the live input bridge engine")
@@ -464,11 +467,31 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def cmd_launcher(args: Optional[argparse.Namespace] = None) -> int:
+    """Launch GTK4/Libadwaita desktop game center (D-01)."""
+    import gi
+    gi.require_version("Gtk", "4.0")
+    gi.require_version("Adw", "1")
+    from gi.repository import Adw
+    from wayfire.ui.launcher_window import WayFireLauncherWindow
+
+    app = Adw.Application(application_id="io.github.wayfire.launcher")
+
+    def _on_activate(application: Adw.Application) -> None:
+        win = WayFireLauncherWindow(app=application)
+        win.present()
+
+    app.connect("activate", _on_activate)
+    return app.run([])
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     """CLI application entry point."""
     parser = build_parser()
     args = parser.parse_args(argv)
 
+    if args.command is None or args.command == "launcher":
+        return cmd_launcher(args)
     if args.command == "run":
         return cmd_run(args)
     if args.command == "test":
