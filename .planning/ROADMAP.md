@@ -101,8 +101,11 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: Implementação do algoritmo anti-bug de analógico integrado ao loop de eventos de suspensão do mouse.
-- [ ] 04-02: Desenvolvimento da interface do Launcher em GTK4/Libadwaita integrando todas as camadas em uma experiência unificada.
+**Wave 1**
+- [ ] 04-01: Algoritmo Anti-Bug do Analógico (SOCD Last Win & Micro-pulso 1ms) e GameSessionCoordinator
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 04-02: Launcher Desktop em GTK4 / Libadwaita, Painel de Saúde do Sistema e Central Unificada
 
 ### Phase 5: Empacotamento, Permissões e Distribuição
 
