@@ -55,7 +55,10 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
+**Wave 1**
 - [ ] 02-01: Implementação da classe `WaydroidController` com controle de sessão, troca de resolução esticada e spoofing ROG Phone.
+
+**Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 02-02: Implementação do `ProfileManager` com serialização JSON, validação de schema e geração do `default_freefire.json`.
 
 ### Phase 3: Editor Visual de Teclas (Overlay Wayland)
