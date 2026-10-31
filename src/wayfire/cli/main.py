@@ -14,6 +14,7 @@ from wayfire.core.aim_engine import AimEngine, AimProcessor
 from wayfire.core.mouse_capture import InputCaptureManager, detect_input_devices
 from wayfire.core.touch_injector import TouchInjector
 from wayfire.ui.terminal_hud import TerminalHUD
+from wayfire.waydroid.controller import WaydroidController
 
 
 def handle_calibration_hotkey(
@@ -192,6 +193,98 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_launch(args: argparse.Namespace, controller: Optional[WaydroidController] = None) -> int:
+    """Launch Free Fire with automated container readiness, resolution, and hardware spoofing."""
+    ctrl = controller or WaydroidController()
+
+    print("🔥 [WayFire] Verificando contêiner do Waydroid...")
+    try:
+        ctrl.ensure_container_active()
+    except RuntimeError as exc:
+        print(f"❌ [WayFire] Erro: {exc}", file=sys.stderr)
+        return 1
+
+    width = args.width
+    height = args.height
+    if args.stretched:
+        width = 1440
+        height = 1080
+
+    if width is not None and height is not None:
+        print(f"🖥️ [WayFire] Aplicando resolução {width}x{height}...")
+        ctrl.set_resolution(width, height)
+
+    if not args.no_spoof:
+        print("⚡ [WayFire] Verificando spoofing ASUS ROG Phone 5 (120 FPS)...")
+        ctrl.apply_spoofing()
+
+    print("🚀 [WayFire] Inicializando sessão gráfica Waydroid...")
+    try:
+        ctrl.start_session()
+    except TimeoutError as exc:
+        print(f"❌ [WayFire] Erro: {exc}", file=sys.stderr)
+        return 1
+
+    pkg = ctrl.detect_freefire_package(args.package)
+    print(f"🎯 [WayFire] Abrindo jogo ({pkg})...")
+    if ctrl.launch_app(pkg):
+        print("✅ [WayFire] Free Fire iniciado com sucesso!")
+        return 0
+    else:
+        print(f"❌ [WayFire] Falha ao iniciar o pacote {pkg}.", file=sys.stderr)
+        return 1
+
+
+def cmd_stop(args: argparse.Namespace, controller: Optional[WaydroidController] = None) -> int:
+    """Stop Free Fire application and optionally the entire Waydroid session."""
+    ctrl = controller or WaydroidController()
+    pkg = args.package or "com.dts.freefireth"
+
+    if args.full:
+        print(f"🛑 [WayFire] Encerrando {pkg} e desligando sessão Waydroid...")
+        ctrl.stop_app(pkg, full=True)
+        print("✅ [WayFire] Sessão e aplicativo encerrados.")
+    else:
+        print(f"🛑 [WayFire] Encerrando aplicativo {pkg}...")
+        ctrl.stop_app(pkg, full=False)
+        print("✅ [WayFire] Aplicativo finalizado. Sessão mantida ativa.")
+    return 0
+
+
+def cmd_spoof(args: argparse.Namespace, controller: Optional[WaydroidController] = None) -> int:
+    """Manage hardware spoofing for unlocking 90/120 FPS in Free Fire."""
+    ctrl = controller or WaydroidController()
+
+    if args.restore:
+        print("🔄 [WayFire] Restaurando propriedades originais do contêiner...")
+        try:
+            ctrl.restore_spoofing()
+            print("✅ [WayFire] Propriedades originais restauradas com sucesso.")
+            return 0
+        except FileNotFoundError as exc:
+            print(f"❌ [WayFire] Erro: {exc}", file=sys.stderr)
+            return 1
+
+    if args.apply:
+        print("⚡ [WayFire] Forçando aplicação de spoofing ASUS ROG Phone 5...")
+        ctrl.apply_spoofing()
+        print("✅ [WayFire] Hardware ASUS ROG Phone 5 aplicado com sucesso.")
+        return 0
+
+    # Default or --status: display current spoofing state
+    is_spoofed = ctrl.is_spoofing_applied()
+    model = "ASUS_I005D (ROG Phone 5)" if is_spoofed else "Padrão / Desconhecido"
+    status_str = "ATIVO (120 FPS liberado)" if is_spoofed else "INATIVO"
+    print(f"📱 [WayFire] Modelo do Dispositivo: {model}")
+    print(f"⚡ [WayFire] Status do Spoofing:     {status_str}")
+    if ctrl.backup_path.exists():
+        print(f"💾 [WayFire] Backup salvo em:        {ctrl.backup_path}")
+    else:
+        print("💾 [WayFire] Backup:                 Nenhum backup encontrado (nunca aplicado)")
+
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build command-line parser."""
     parser = argparse.ArgumentParser(
@@ -214,6 +307,25 @@ def build_parser() -> argparse.ArgumentParser:
     test_parser.add_argument("--create-uinput", action="store_true", help="Test uinput virtual device creation")
     test_parser.add_argument("--interactive", action="store_true", help="Run interactive TUI simulation")
 
+    # Subcommand: launch
+    launch_parser = subparsers.add_parser("launch", help="Start Waydroid and launch Free Fire optimized")
+    launch_parser.add_argument("--package", type=str, help="Android package name (e.g., com.dts.freefireth)")
+    launch_parser.add_argument("--width", type=int, help="Screen width in pixels")
+    launch_parser.add_argument("--height", type=int, help="Screen height in pixels")
+    launch_parser.add_argument("--stretched", action="store_true", help="Use competitive stretched 1440x1080 4:3")
+    launch_parser.add_argument("--no-spoof", action="store_true", help="Skip ASUS ROG Phone 5 hardware spoofing")
+
+    # Subcommand: stop
+    stop_parser = subparsers.add_parser("stop", help="Stop Free Fire and optionally Waydroid session")
+    stop_parser.add_argument("--package", type=str, help="Android package name to stop")
+    stop_parser.add_argument("--full", action="store_true", help="Terminate full Waydroid graphics session")
+
+    # Subcommand: spoof
+    spoof_parser = subparsers.add_parser("spoof", help="Inspect and control ASUS ROG Phone 5 hardware spoofing")
+    spoof_parser.add_argument("--status", action="store_true", help="Display current spoofing status")
+    spoof_parser.add_argument("--apply", action="store_true", help="Force apply ASUS ROG Phone 5 properties")
+    spoof_parser.add_argument("--restore", action="store_true", help="Restore original hardware properties from backup")
+
     return parser
 
 
@@ -226,6 +338,12 @@ def main(argv: Optional[list[str]] = None) -> int:
         return cmd_run(args)
     if args.command == "test":
         return cmd_test(args)
+    if args.command == "launch":
+        return cmd_launch(args)
+    if args.command == "stop":
+        return cmd_stop(args)
+    if args.command == "spoof":
+        return cmd_spoof(args)
 
     return 0
 

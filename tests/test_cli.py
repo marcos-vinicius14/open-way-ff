@@ -108,3 +108,103 @@ def test_cmd_test_interactive_simulation() -> None:
     """Verify wayfire test --interactive runs simulation loop without errors."""
     ret = main(["test", "--interactive"])
     assert ret == 0
+
+
+def test_cli_launch_stop_spoof_argument_parsing() -> None:
+    """Verify CLI parser handles launch, stop, and spoof subcommands with all flags."""
+    parser = build_parser()
+
+    # Launch args
+    l_args = parser.parse_args(["launch", "--stretched", "--package", "com.dts.freefiremax", "--no-spoof"])
+    assert l_args.command == "launch"
+    assert l_args.stretched is True
+    assert l_args.package == "com.dts.freefiremax"
+    assert l_args.no_spoof is True
+
+    # Stop args
+    s_args = parser.parse_args(["stop", "--full", "--package", "com.custom.ff"])
+    assert s_args.command == "stop"
+    assert s_args.full is True
+    assert s_args.package == "com.custom.ff"
+
+    # Spoof args
+    sp_status = parser.parse_args(["spoof", "--status"])
+    assert sp_status.command == "spoof"
+    assert sp_status.status is True
+
+    sp_apply = parser.parse_args(["spoof", "--apply"])
+    assert sp_apply.command == "spoof"
+    assert sp_apply.apply is True
+
+    sp_restore = parser.parse_args(["spoof", "--restore"])
+    assert sp_restore.command == "spoof"
+    assert sp_restore.restore is True
+
+
+def test_cmd_launch_execution_order() -> None:
+    """Verify cmd_launch executes operations in proper sequence: container -> res -> spoof -> session -> launch."""
+    from unittest.mock import MagicMock
+    from wayfire.cli.main import cmd_launch
+
+    mock_ctrl = MagicMock()
+    mock_ctrl.ensure_container_active.return_value = True
+    mock_ctrl.detect_freefire_package.return_value = "com.dts.freefireth"
+    mock_ctrl.launch_app.return_value = True
+
+    parser = build_parser()
+    args = parser.parse_args(["launch", "--stretched"])
+
+    ret = cmd_launch(args, controller=mock_ctrl)
+    assert ret == 0
+
+    mock_ctrl.ensure_container_active.assert_called_once()
+    mock_ctrl.set_resolution.assert_called_once_with(1440, 1080)
+    mock_ctrl.apply_spoofing.assert_called_once()
+    mock_ctrl.start_session.assert_called_once()
+    mock_ctrl.launch_app.assert_called_once_with("com.dts.freefireth")
+
+
+def test_cmd_stop_execution() -> None:
+    """Verify cmd_stop handles standard stop and full session stop."""
+    from unittest.mock import MagicMock
+    from wayfire.cli.main import cmd_stop
+
+    mock_ctrl = MagicMock()
+
+    # Standard stop
+    parser = build_parser()
+    args_normal = parser.parse_args(["stop"])
+    assert cmd_stop(args_normal, controller=mock_ctrl) == 0
+    mock_ctrl.stop_app.assert_called_with("com.dts.freefireth", full=False)
+
+    # Full stop
+    args_full = parser.parse_args(["stop", "--full", "--package", "com.dts.freefiremax"])
+    assert cmd_stop(args_full, controller=mock_ctrl) == 0
+    mock_ctrl.stop_app.assert_called_with("com.dts.freefiremax", full=True)
+
+
+def test_cmd_spoof_execution(tmp_path: Path) -> None:
+    """Verify cmd_spoof handles --status, --apply, and --restore."""
+    from unittest.mock import MagicMock
+    from wayfire.cli.main import cmd_spoof
+
+    mock_ctrl = MagicMock()
+    mock_ctrl.backup_path = tmp_path / "device_backup.json"
+
+    parser = build_parser()
+
+    # Status
+    mock_ctrl.is_spoofing_applied.return_value = True
+    args_status = parser.parse_args(["spoof", "--status"])
+    assert cmd_spoof(args_status, controller=mock_ctrl) == 0
+
+    # Apply
+    args_apply = parser.parse_args(["spoof", "--apply"])
+    assert cmd_spoof(args_apply, controller=mock_ctrl) == 0
+    mock_ctrl.apply_spoofing.assert_called_once()
+
+    # Restore
+    args_restore = parser.parse_args(["spoof", "--restore"])
+    assert cmd_spoof(args_restore, controller=mock_ctrl) == 0
+    mock_ctrl.restore_spoofing.assert_called_once()
+
